@@ -13,13 +13,13 @@
 
 
 ## Project Overview
-
+- loremipsum
 
 ## Project Scope
-
+- loremipsum
 
 **Machine Learning Integration**
-- Spice classification using Convolutional Neural Networks (CNN) With Transfer Learning
+- loremipsum
 
 **Tools/IDE/Library:**
 - **Figma**: UI/UX design collaboration
@@ -29,7 +29,7 @@
 - **Google Collab / Jupyter Notebook**: Collaborative ML project environment
 =======
 # FutureMinded Project (Web Development)
-
+- loremipsum
 
 
 
@@ -38,17 +38,17 @@
 ## Features
 
 Some of the features we have developed involve:
-
+- loremipsum
 
 
 
 
 ## Requirements & Tools
-
+- loremipsum
 
 
 ## Installation or Getting Started
-
+- loremipsum
 
 
 ## Usage
