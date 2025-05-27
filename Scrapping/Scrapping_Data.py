@@ -2,39 +2,19 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-import time
 
-# Fungsi untuk mengambil data dari halaman O*NET dengan paginasi
+# Fungsi untuk mengambil data dari halaman O*NET
 def scrape_onet_personality(url, personality):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # Inisialisasi list untuk menyimpan data
     data = []
-    page = 1
-    max_attempts = 30  # Batas percobaan untuk halaman
-
-    while True:
-        # Tambahkan parameter halaman ke URL
-        page_url = f"{url}?p={page}" if page > 1 else url
-        print(f"Scraping {personality} - Page {page}: {page_url}")
-        
-        try:
-            response = requests.get(page_url, timeout=10)
-            response.raise_for_status()  # Pastikan respons sukses
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching page {page}: {e}")
-            break
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
-        table = soup.find('table')
-        
-        # Jika tabel tidak ditemukan atau halaman kosong, hentikan
-        if not table or "No results found" in soup.text:
-            print(f"No more data for {personality} at page {page}")
-            break
-        
+    
+    # Temukan tabel di halaman
+    table = soup.find('table')
+    if table:
         rows = table.find_all('tr')[1:]  # Lewati header
-        if not rows:  # Jika tidak ada baris data
-            print(f"No rows found on page {page}")
-            break
-        
         for row in rows:
             cols = row.find_all('td')
             if len(cols) >= 4:
@@ -60,46 +40,18 @@ def scrape_onet_personality(url, personality):
                     'Third Interest Area': third_interest,
                     'Shown in Fewer Occupations': shown_fewer
                 })
-        
-        page += 1
-        time.sleep(1)  # Delay untuk menghindari rate limiting
-        
-        # Batas maksimum halaman untuk mencegah loop tak terbatas
-        if page > max_attempts:
-            print(f"Reached max page limit ({max_attempts}) for {personality}")
-            break
     
     return pd.DataFrame(data)
 
-# Fungsi untuk mengambil dataset pekerjaan dengan paginasi
+# Fungsi untuk mengambil dataset pekerjaan
 def scrape_onet_occupations(url):
-    data = []
-    page = 1
-    max_attempts = 50  # Batas halaman lebih besar karena data pekerjaan banyak
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
     
-    while True:
-        page_url = f"{url}&p={page}" if page > 1 else url
-        print(f"Scraping Occupations - Page {page}: {page_url}")
-        
-        try:
-            response = requests.get(page_url, timeout=10)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching page {page}: {e}")
-            break
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
-        table = soup.find('table')
-        
-        if not table or "No results found" in soup.text:
-            print(f"No more data for occupations at page {page}")
-            break
-        
+    data = []
+    table = soup.find('table')
+    if table:
         rows = table.find_all('tr')[1:]  # Lewati header
-        if not rows:
-            print(f"No rows found on page {page}")
-            break
-        
         for row in rows:
             cols = row.find_all('td')
             if len(cols) >= 3:
@@ -112,13 +64,6 @@ def scrape_onet_occupations(url):
                     'Occupation': occupation,
                     'Job Family': job_family
                 })
-        
-        page += 1
-        time.sleep(1)  # Delay untuk menghindari rate limiting
-        
-        if page > max_attempts:
-            print(f"Reached max page limit ({max_attempts}) for occupations")
-            break
     
     return pd.DataFrame(data)
 
@@ -137,20 +82,16 @@ occupation_url = 'https://www.onetonline.org/find/family?f=0&g=Go'
 riasec_dfs = []
 for personality, url in riasec_urls.items():
     df = scrape_onet_personality(url, personality)
-    print(f"Collected {len(df)} rows for {personality}")
     riasec_dfs.append(df)
 
 # Gabungkan semua dataset RIASEC
 riasec_combined = pd.concat(riasec_dfs, ignore_index=True)
-riasec_combined = riasec_combined.drop_duplicates()  # Hapus duplikat jika ada
 
 # Scraping dataset pekerjaan
 occupation_df = scrape_onet_occupations(occupation_url)
-occupation_df = occupation_df.drop_duplicates()  # Hapus duplikat jika ada
 
 # Simpan ke CSV
-riasec_combined.to_csv('riasec_dataset_full.csv', index=False)
-occupation_df.to_csv('occupation_dataset_full.csv', index=False)
+riasec_combined.to_csv('riasec_dataset.csv', index=False)
+occupation_df.to_csv('occupation_dataset.csv', index=False)
 
-print(f"Dataset RIASEC berhasil disimpan: riasec_dataset_full.csv ({len(riasec_combined)} rows)")
-print(f"Dataset Pekerjaan berhasil disimpan: occupation_dataset_full.csv ({len(occupation_df)} rows)")
+print("Dataset berhasil disimpan: riasec_dataset.csv dan occupation_dataset.csv")
