@@ -1,31 +1,78 @@
-import streamlit as st
-import pandas as pd
+import os
+import time
+import base64
+import joblib
+import tempfile
 import numpy as np
+import pandas as pd
+from fpdf import FPDF
+from PIL import Image
+import streamlit as st
+from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
-from fpdf import FPDF
-import base64
-from datetime import datetime
-import tempfile
-import os
-from PIL import Image
+from tensorflow.keras.models import load_model
 
-# Data pertanyaan RIASEC
+# # Load model dan scaler
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+riasec_types_list = ['Realistic', 'Investigative', 'Artistic', 'Social', 'Enterprising', 'Conventional']\
+
+# Data pertanyaan RIASEC yang diperbarui
 questions = [
-    {"question": "Saya suka bekerja dengan alat-alat atau mesin.", "type": "R"},
-    {"question": "Saya senang membantu orang lain dengan masalah mereka.", "type": "S"},
-    {"question": "Saya suka bekerja dengan angka dan data.", "type": "C"},
-    {"question": "Saya menikmati kegiatan kreatif seperti melukis atau menulis.", "type": "A"},
-    {"question": "Saya suka memimpin dan mempengaruhi orang lain.", "type": "E"},
-    {"question": "Saya tertarik mempelajari tumbuhan dan hewan.", "type": "I"},
-    {"question": "Saya senang memperbaiki barang-barang elektronik.", "type": "R"},
-    {"question": "Saya suka mengajar atau melatih orang lain.", "type": "S"},
-    {"question": "Saya teliti dalam mengatur dokumen dan arsip.", "type": "C"},
-    {"question": "Saya memiliki imajinasi yang kuat.", "type": "A"},
-    {"question": "Saya pandai meyakinkan orang lain.", "type": "E"},
-    {"question": "Saya senang melakukan eksperimen ilmiah.", "type": "I"},
+    {"question": "Saya suka bekerja dengan alat, mesin, atau tanaman.", "type": "R"},
+    {"question": "Saya senang menyelidiki masalah atau memecahkan teka-teki.", "type": "I"},
+    {"question": "Saya suka menggambar, melukis, atau menulis cerita.", "type": "A"},
+    {"question": "Saya menikmati membantu orang menyelesaikan masalah.", "type": "S"},
+    {"question": "Saya suka memimpin proyek atau orang.", "type": "E"},
+    {"question": "Saya menikmati bekerja dengan data atau angka.", "type": "C"},
+    {"question": "Saya menikmati aktivitas fisik atau pekerjaan lapangan.", "type": "R"},
+    {"question": "Saya suka menganalisis informasi dan melakukan eksperimen.", "type": "I"},
+    {"question": "Saya suka tampil di depan umum seperti berakting atau menyanyi.", "type": "A"},
+    {"question": "Saya senang mengajar atau melatih orang lain.", "type": "S"},
+    {"question": "Saya suka menjual atau mempromosikan ide atau produk.", "type": "E"},
+    {"question": "Saya suka pekerjaan yang melibatkan rutinitas dan struktur.", "type": "C"},
+    {"question": "Saya suka menggunakan alat atau kendaraan.", "type": "R"},
+    {"question": "Saya penasaran dengan bagaimana sesuatu bekerja.", "type": "I"},
+    {"question": "Saya suka mendesain atau membuat hal kreatif.", "type": "A"},
+    {"question": "Saya suka mendengarkan masalah orang dan membantu mereka.", "type": "S"},
+    {"question": "Saya suka mengambil keputusan dan mengambil risiko.", "type": "E"},
+    {"question": "Saya suka mengatur data atau menyusun informasi.", "type": "C"},
+    {"question": "Saya suka membangun atau memperbaiki sesuatu.", "type": "R"},
+    {"question": "Saya suka memecahkan masalah menggunakan logika.", "type": "I"},
+    {"question": "Saya suka menulis puisi, cerita, atau lagu.", "type": "A"},
+    {"question": "Saya suka menjadi sukarelawan dalam kegiatan sosial.", "type": "S"},
+    {"question": "Saya suka menjadi pemimpin dalam kelompok.", "type": "E"},
+    {"question": "Saya suka bekerja dengan komputer dan angka.", "type": "C"},
+    {"question": "Saya senang menggunakan kekuatan atau ketangkasan saya.", "type": "R"},
+    {"question": "Saya suka bertanya dan mengeksplorasi hal baru.", "type": "I"},
+    {"question": "Saya suka membuat karya seni atau musik.", "type": "A"},
+    {"question": "Saya suka mendengarkan dan memberi nasihat.", "type": "S"},
+    {"question": "Saya suka mengatur orang untuk mencapai tujuan.", "type": "E"},
+    {"question": "Saya suka bekerja dengan detail dan mengikuti instruksi.", "type": "C"},
+    {"question": "Saya suka bekerja di luar ruangan.", "type": "R"},
+    {"question": "Saya suka meneliti dan menganalisis masalah.", "type": "I"},
+    {"question": "Saya suka mengekspresikan diri melalui seni atau drama.", "type": "A"},
+    {"question": "Saya suka membimbing dan mengajar orang.", "type": "S"},
+    {"question": "Saya suka meyakinkan orang lain untuk membeli sesuatu.", "type": "E"},
+    {"question": "Saya suka menyusun laporan atau membuat tabel data.", "type": "C"},
+    {"question": "Saya suka menggunakan peralatan atau instrumen.", "type": "R"},
+    {"question": "Saya suka memecahkan teka-teki logika.", "type": "I"},
+    {"question": "Saya suka bermain musik atau menari.", "type": "A"},
+    {"question": "Saya suka membantu orang mengembangkan diri.", "type": "S"},
+    {"question": "Saya suka menjadi pemimpin proyek.", "type": "E"},
+    {"question": "Saya suka pekerjaan administratif atau perkantoran.", "type": "C"}
 ]
+
+# Indeks pertanyaan untuk setiap tipe RIASEC
+riasec_index = {
+    'R': [0, 6, 12, 18, 24, 30, 36],
+    'I': [1, 7, 13, 19, 25, 31, 37],
+    'A': [2, 8, 14, 20, 26, 32, 38],
+    'S': [3, 9, 15, 21, 27, 33, 39],
+    'E': [4, 10, 16, 22, 28, 34, 40],
+    'C': [5, 11, 17, 23, 29, 35, 41]
+}
 
 # Deskripsi tipe kepribadian RIASEC
 riasec_types = {
@@ -88,15 +135,32 @@ dark_mode = {
     "input_border": "none"
 }
 
+def recommend_jobs(user_scores, top_n=5):
+    user_df = pd.DataFrame([user_scores], columns=riasec_types_list)
+    scaled = st.session_state.scaler.transform(user_df)
+    user_embed = st.session_state.model.predict(scaled)
+    job_embed = st.session_state.model.predict(st.session_state.scaler.transform(st.session_state.df_pivot[riasec_types_list].values))
+
+    # cosine similarity
+    user_norm = np.linalg.norm(user_embed, axis=1, keepdims=True)
+    job_norm = np.linalg.norm(job_embed, axis=1, keepdims=True)
+    sim = np.dot(job_embed, user_embed.T) / (job_norm * user_norm.T + 1e-8)
+    sim = sim.flatten()
+    
+    top_idx = sim.argsort()[-top_n:][::-1]
+    result = st.session_state.df_pivot.iloc[top_idx][['Title', 'Job Family']].copy()
+    result['Similarity Score'] = sim[top_idx]
+    result['Similarity Score'] = result['Similarity Score'].round(3)
+    top_dim = user_df.iloc[0].sort_values(ascending=False).head(2).index.tolist()
+    result['Alasan'] = f"Skor tertinggi Anda pada dimensi {top_dim[0]} dan {top_dim[1]}"
+    return result.reset_index(drop=True)
+
 def create_riasec_chart(scores, dark_mode=False):
     # Urutan tipe sesuai diagram RIASEC (hexagon)
     types = ['R', 'I', 'A', 'S', 'E', 'C']
     labels = [riasec_types[t]['name'] for t in types]
     colors = [riasec_types[t]['color'] for t in types]
     values = [scores[t] for t in types]
-    
-    # Normalisasi nilai ke 0-100
-    normalized_values = [v for v in values]
     
     # Sudut untuk setiap titik dalam hexagon
     angles = np.linspace(0, 2*np.pi, len(types), endpoint=False).tolist()
@@ -117,11 +181,11 @@ def create_riasec_chart(scores, dark_mode=False):
     ax.set_theta_direction(-1)
     ax.set_thetagrids(np.degrees(angles[:-1]), labels)
     
-    # Atur grid
+    # Atur grid untuk skala 1-5
     ax.set_rlabel_position(0)
-    plt.yticks([20, 40, 60, 80, 100], ["20", "40", "60", "80", "100"], 
+    plt.yticks([1, 2, 3, 4, 5], ["1", "2", "3", "4", "5"], 
                color="white" if dark_mode else "black", size=8)
-    plt.ylim(0, 100)
+    plt.ylim(1, 5)
     
     # Atur warna teks
     for label in ax.get_xticklabels():
@@ -286,6 +350,12 @@ def set_page_style(dark):
 def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     pdf = FPDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Add logo if available
+    logo_path = os.path.join(BASE_DIR, "../Logo/FM_logo_full.png")
+    if os.path.exists(logo_path):
+        pdf.image(logo_path, x=10, y=8, w=40)
     
     # Header
     pdf.set_font("Arial", 'B', 16)
@@ -305,7 +375,7 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     
     pdf.set_font("Arial", '', 12)
     for type_code, score in scores.items():
-        pdf.cell(0, 10, f"{riasec_types[type_code]['name']}: {score}%", 0, 1)
+        pdf.cell(0, 10, f"{riasec_types[type_code]['name']}: {score}", 0, 1)
     
     pdf.ln(10)
     
@@ -403,8 +473,19 @@ def main():
     elif st.session_state.page == "test":
         render_test_page()
     
-    # Halaman hasil
+    # Halaman hasil - load model hanya saat diperlukan
     elif st.session_state.page == "results":
+        # Load model and scaler only when needed
+        if 'model' not in st.session_state:
+            try:
+                with st.spinner('Memproses hasil tes...'):
+                    st.session_state.model = load_model(os.path.join(BASE_DIR, "../model/embedding_model.h5"), compile=False)
+                    st.session_state.scaler = joblib.load(os.path.join(BASE_DIR, "../model/scaler.pkl"))
+                    st.session_state.df_pivot = pd.read_csv(os.path.join(BASE_DIR, "../dataset/job_with_family.csv"))
+            except Exception as e:
+                st.error(f"Failed to load resources: {str(e)}")
+                st.stop()
+        
         render_results_page()
 
 def render_start_page():
@@ -434,23 +515,29 @@ def render_start_page():
             else:
                 st.session_state.page = "test"
                 st.rerun()
-
 def render_test_page():
     st.markdown(f"<h1 style='color: var(--primary);'>Tes Kepribadian RIASEC</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='color: var(--text);'>Halo, {st.session_state.name}!</h3>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color: var(--text);'>Silakan jawab pertanyaan berikut dengan sejujurnya:</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: var(--text);'>Silakan jawab pertanyaan berikut dengan skala 1 (Sangat Tidak Setuju) sampai 5 (Sangat Setuju):</p>", unsafe_allow_html=True)
     
     # Tampilkan progress bar
-    progress = len(st.session_state.answers) / len(questions)
+    answered_count = len(st.session_state.answers)
+    total_questions = len(questions)
+    progress = answered_count / total_questions
+    
+    # Perbaikan di sini: Gunakan min() untuk memastikan tidak melebihi total pertanyaan
+    current_question = min(answered_count + 1, total_questions)
+    
     st.markdown(f"""
     <div class="progress-bar">
         <div class="progress-fill" style="width: {progress * 100}%;"></div>
     </div>
-    <p style="text-align: center; color: var(--text);">Pertanyaan {len(st.session_state.answers) + 1} dari {len(questions)}</p>
+    <p style="text-align: center; color: var(--text);">Pertanyaan {current_question} dari {total_questions}</p>
     """, unsafe_allow_html=True)
     
     # Tampilkan pertanyaan yang belum dijawab
     unanswered = [q for i, q in enumerate(questions) if i not in st.session_state.answers]
+    
     if unanswered:
         current_q = unanswered[0]
         current_index = questions.index(current_q)
@@ -461,19 +548,41 @@ def render_test_page():
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns(3)
+        # Show buttons directly in columns
+        col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            if st.button("Tidak Setuju", key=f"no_{current_index}"):
-                st.session_state.answers[current_index] = 0
-                st.rerun()
-        with col2:
-            if st.button("Netral", key=f"neutral_{current_index}"):
+            if st.button("1", key=f"1_{current_index}"):
                 st.session_state.answers[current_index] = 1
                 st.rerun()
-        with col3:
-            if st.button("Setuju", key=f"yes_{current_index}"):
+        with col2:
+            if st.button("2", key=f"2_{current_index}"):
                 st.session_state.answers[current_index] = 2
                 st.rerun()
+        with col3:
+            if st.button("3", key=f"3_{current_index}"):
+                st.session_state.answers[current_index] = 3
+                st.rerun()
+        with col4:
+            if st.button("4", key=f"4_{current_index}"):
+                st.session_state.answers[current_index] = 4
+                st.rerun()
+        with col5:
+            if st.button("5", key=f"5_{current_index}"):
+                st.session_state.answers[current_index] = 5
+                st.rerun()
+
+        # Add explanation below the buttons
+        st.markdown("""
+        <div style="text-align: center; margin-top: 10px; color: var(--text-secondary);">
+            <small>
+                1: Sangat Tidak Setuju | 
+                2: Tidak Setuju | 
+                3: Netral | 
+                4: Setuju | 
+                5: Sangat Setuju
+            </small>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         # Semua pertanyaan telah dijawab
         st.session_state.page = "results"
@@ -490,11 +599,14 @@ def render_results_page():
         q_type = questions[idx]["type"]
         scores[q_type] += answer
     
-    # Normalisasi skor (0-100)
+    # Normalisasi skor (rata-rata per tipe)
     for k in scores:
         question_count = len([q for q in questions if q["type"] == k])
         if question_count > 0:
-            scores[k] = int((scores[k] / (2 * question_count)) * 100)
+            scores[k] = round(scores[k] / question_count, 2)
+    
+    # Konversi ke format yang dibutuhkan untuk rekomendasi
+    user_scores = [scores['R'], scores['I'], scores['A'], scores['S'], scores['E'], scores['C']]
     
     # Tampilkan skor
     st.markdown("<h3 style='color: var(--text);'>Skor Anda:</h3>", unsafe_allow_html=True)
@@ -510,14 +622,13 @@ def render_results_page():
                         border-left: 5px solid {riasec_types[type_code]['color']};
                         color: var(--text);">
                 <h4>{riasec_types[type_code]['name']}</h4>
-                <h3>{score}%</h3>
+                <h3>{score}</h3>
             </div>
             """, unsafe_allow_html=True)
     
-    # Tampilkan diagram RIASEC
+    # Tampilkan diagram RIASEC (skala 1-5)
     st.markdown("<h3 style='color: var(--text);'>Profil Kepribadian:</h3>", unsafe_allow_html=True)
     chart_path = create_riasec_chart(scores, st.session_state.dark_mode)
-    # Center the chart using Streamlit columns
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
         st.image(chart_path)
@@ -531,29 +642,52 @@ def render_results_page():
     </div>
     """, unsafe_allow_html=True)
     
-    # Rekomendasi pekerjaan
-    recommended_jobs = {
-        "R": ["Teknisi Mesin", "Insinyur Sipil", "Montir", "Pilot", "Arsitek Lansekap"],
-        "I": ["Ilmuwan", "Dokter", "Apoteker", "Psikolog", "Peneliti"],
-        "A": ["Desainer Grafis", "Penulis", "Musisi", "Aktor", "Fotografer"],
-        "S": ["Guru", "Perawat", "Konselor", "Pekerja Sosial", "Psikolog Klinis"],
-        "E": ["Pengusaha", "Manajer", "Sales", "Pengacara", "Marketing Manager"],
-        "C": ["Akuntan", "Sekretaris Eksekutif", "Analis Data", "Pustakawan", "Auditor"]
-    }
+    # Dapatkan rekomendasi pekerjaan menggunakan model
+    recommended_jobs_df = recommend_jobs(user_scores)
     
-    st.markdown(f"""
-    <div class="result-card">
-        <h3 style='color: var(--text);'>Rekomendasi Pekerjaan:</h3>
-        {''.join([f"<p style='color: var(--text);'>✅ {job}</p>" for job in recommended_jobs[dominant_type]])}
-    </div>
+    # Display the recommendations with proper formatting
+    st.markdown("<h3 style='color: var(--text);'>Rekomendasi Karier untuk Anda:</h3>", unsafe_allow_html=True)
+
+    # Create a styled table
+    st.markdown("""
+    <style>
+        .job-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .job-table th {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .job-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .job-table tr:nth-child(even) {
+            background-color: var(--card);
+        }
+        .job-table tr:hover {
+            background-color: var(--secondary);
+            opacity: 0.8;
+        }
+    </style>
     """, unsafe_allow_html=True)
+
+    # Convert DataFrame to HTML and display
+    st.markdown(
+        recommended_jobs_df.to_html(classes="job-table", index=False, escape=False),
+        unsafe_allow_html=True
+    )
     
     # Buat dan tampilkan tombol download PDF
     pdf_output = create_pdf(
         st.session_state.name, 
         scores, 
         dominant_type, 
-        recommended_jobs[dominant_type],
+        recommended_jobs_df['Title'].tolist(),
         chart_path
     )
     st.markdown(get_pdf_download_link(pdf_output, st.session_state.name), unsafe_allow_html=True)
