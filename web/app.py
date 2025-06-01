@@ -491,7 +491,8 @@ def main():
 def render_start_page():
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.image("../Logo/FM_logo_full.png")
+        logo_path = os.path.join(BASE_DIR, "../Logo/FM_logo_full.png")
+        st.image(logo_path)
         st.markdown(f"<h1 style='color: var(--primary);'>FutureMinded: Make Your Own Choice</h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='font-size: 18px; color: var(--text);'>FutureMinded merupakan platform pengembangan diri yang membantu Anda menemukan minat dan potensi karir melalui Tes Kepribadian RIASEC. Temukan tipe kepribadian dan rekomendasi karir yang sesuai untuk masa depan Anda.</p>", unsafe_allow_html=True)
         
