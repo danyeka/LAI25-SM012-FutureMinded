@@ -148,7 +148,6 @@ You can access the application online at:
 │   └── train_model.py
 ├── web/
 │   ├── app.py
-│   ├── README.md
 │   └── requirements.txt
 ├── career_recommender_model.ipynb
 ├── riasec_input.ipynb
