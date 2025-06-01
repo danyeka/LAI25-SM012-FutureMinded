@@ -67,13 +67,14 @@ This project is a web-based personality test application implementing the RIASEC
 - **PIL** – Image processing
 
 ---
-
+```
 ## Installation
 
 ### Prerequisites
 
 - Ensure Python 3.x is installed
 - It is recommended to use a virtual environment
+```
 
 ### Steps
 
@@ -96,18 +97,67 @@ pip install -r requirements.txt
 
 # Run the application
 streamlit run app.py
+
+# The application will run in your default browser on:  
+[http://localhost:8501](http://localhost:8501)
 ```
+
+## How to Use
+
+1. Enter your name on the start page  
+2. Click **"Start Test"**  
+3. Answer all questions honestly  
+4. View your personality test results and career recommendations  
+5. Download the results in PDF format if needed
+
+## Web Demo
+
+You can access the application online at:  
+[https://futureminded-riasec.streamlit.app](https://futureminded-riasec.streamlit.app)
+
+
 ## Struktur File
 
 ```
 .
-├── app.py                # File utama aplikasi
-├── requirements.txt      # Dependencies
-├── README.md             # Dokumentasi ini
-└── assets/               # Folder untuk aset (logo, dll)
-    └── FM_logo_full.png  # Logo aplikasi
+├── another_raw_dataset/
+│   ├── occupation_dataset.csv
+│   └── riasec_dataset.csv
+├── Dataset/
+│   ├── interests_riasec_dataset.csv
+│   ├── job_with_family.csv
+│   └── occupation_dataset.csv
+├── Logo/
+│   └── FM_logo_full.png
+├── Model/
+│   ├── embedding_model.h5
+│   └── scaler.pkl
+├── raw_datasetfromonet/
+├── Referensi/
+│   └── RIASEC.pdf
+├── Scrapping/
+│   ├── Scrapping_Data.py
+│   └── Scrapping_Data copy.py
+├── Scripts/
+│   ├── auto_recommender.py
+│   ├── recommend_from_score.py
+│   ├── riasec_form_input.py
+│   └── train_model.py
+├── train/
+│   ├── auto_recommender.py
+│   └── train_model.py
+├── web/
+│   ├── app.py
+│   ├── README.md
+│   └── requirements.txt
+├── career_recommender_model.ipynb
+├── riasec_input.ipynb
+├── notebook (3).ipynb
+├── [Laskar AI] Template Project Plan.docx
+├── README.md
 ```
     
-## Reference
-
+## References
+- Dataset Source: [O*NET Interest Profiler - Realistic](https://www.onetonline.org/explore/interests/Realistic)
+- UI/UX Inspiration: The initial design concept of the website was inspired by [My Next Move](https://www.mynextmove.org/)
 
