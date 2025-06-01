@@ -97,7 +97,7 @@ def recommend_jobs(user_scores, top_n=5):
     user_df = pd.DataFrame([user_scores], columns=riasec_types)
     scaled = scaler.transform(user_df)
     user_embed = model.predict(scaled)
-    job_embed = model.predict(scaler.transform(riasec_data))
+    job_embed = model.predict(scaler.transform(pd.DataFrame(riasec_data, columns=riasec_types)))
 
     # cosine similarity
     user_norm = np.linalg.norm(user_embed, axis=1, keepdims=True)
