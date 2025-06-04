@@ -151,7 +151,7 @@ You can access the application online at:
 │   └── requirements.txt
 ├── career_recommender_model.ipynb
 ├── riasec_input.ipynb
-├── notebook (3).ipynb
+├── notebook.ipynb
 ├── [Laskar AI] Template Project Plan.docx
 ├── README.md
 ```
