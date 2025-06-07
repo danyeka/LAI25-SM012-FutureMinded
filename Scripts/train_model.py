@@ -22,7 +22,7 @@ df_pivot = riasec_df[['O*NET-SOC Code', 'Title', 'Element Name', 'Data Value']] 
 # Gabungkan dengan job family
 df_pivot = df_pivot.merge(occupation_df, on='O*NET-SOC Code', how='left')
 
-# ✅ Simpan hasil merge
+# Simpan hasil merge
 df_pivot.to_csv("Dataset/job_with_family.csv", index=False)
 
 riasec_types = ['Realistic', 'Investigative', 'Artistic', 'Social', 'Enterprising', 'Conventional']
@@ -109,7 +109,7 @@ history = triplet_model.fit(
 # ========================
 # 6. Simpan Model Embedding
 # ========================
-embedding_model.save("Model/embedding_model.h5")
+embedding_model.save("Model/embedding_model.keras")
 
 # ========================
 # 7. Plot Loss

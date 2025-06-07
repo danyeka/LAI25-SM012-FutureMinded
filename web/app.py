@@ -14,9 +14,9 @@ from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 from tensorflow.keras.models import load_model
 
-# # Load model dan scaler
+# Load model dan scaler
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-riasec_types_list = ['Realistic', 'Investigative', 'Artistic', 'Social', 'Enterprising', 'Conventional']\
+riasec_types_list = ['Realistic', 'Investigative', 'Artistic', 'Social', 'Enterprising', 'Conventional']
 
 # Data pertanyaan RIASEC yang diperbarui
 questions = [
@@ -108,29 +108,16 @@ riasec_types = {
     }
 }
 
-# Warna tema
-light_mode = {
-    "primary": "#6C5CE7",
-    "secondary": "#A29BFE",
-    "background": "#FFFFFF",
-    "card": "#F8F9FA",
-    "text": "#2D3436",
-    "text_secondary": "#636E72",
-    "border": "#DFE6E9",
-    "input_background": "#F0F2F6",
-    "input_text": "#2D3436",
-    "input_border": "none"
-}
-
-dark_mode = {
-    "primary": "#A78AFF",
-    "secondary": "#6C5CE7",
-    "background": "#121212",
-    "card": "#1E1E1E",
+# Warna tema dengan efek neon
+theme = {
+    "primary": "#00FFCC",  # Neon Cyan
+    "secondary": "#FF00FF",  # Neon Pink
+    "background": "#0F0F1A",  # Deeper Black
+    "card": "#1C2526",  # Dark Slate
     "text": "#FFFFFF",
-    "text_secondary": "#B2B2B2",
-    "border": "#424242",
-    "input_background": "#2D2D2D",
+    "text_secondary": "#B0E0E6",  # Powder Blue
+    "border": "#00CED1",  # Dark Turquoise
+    "input_background": "#2A2A40",
     "input_text": "#FFFFFF",
     "input_border": "none"
 }
@@ -141,7 +128,6 @@ def recommend_jobs(user_scores, top_n=5):
     user_embed = st.session_state.model.predict(scaled)
     job_embed = st.session_state.model.predict(st.session_state.scaler.transform(st.session_state.df_pivot[riasec_types_list].values))
 
-    # cosine similarity
     user_norm = np.linalg.norm(user_embed, axis=1, keepdims=True)
     job_norm = np.linalg.norm(job_embed, axis=1, keepdims=True)
     sim = np.dot(job_embed, user_embed.T) / (job_norm * user_norm.T + 1e-8)
@@ -156,54 +142,42 @@ def recommend_jobs(user_scores, top_n=5):
     return result.reset_index(drop=True)
 
 def create_riasec_chart(scores, dark_mode=False):
-    # Urutan tipe sesuai diagram RIASEC (hexagon)
     types = ['R', 'I', 'A', 'S', 'E', 'C']
     labels = [riasec_types[t]['name'] for t in types]
     colors = [riasec_types[t]['color'] for t in types]
     values = [scores[t] for t in types]
     
-    # Sudut untuk setiap titik dalam hexagon
     angles = np.linspace(0, 2*np.pi, len(types), endpoint=False).tolist()
-    angles += angles[:1]  # Tutup loop
+    angles += angles[:1]
     
-    # Buat plot
     fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
-    fig.patch.set_facecolor('#121212' if dark_mode else '#FFFFFF')
-    ax.set_facecolor('#121212' if dark_mode else '#FFFFFF')
+    fig.patch.set_facecolor('#0F0F1A' if dark_mode else '#FFFFFF')
+    ax.set_facecolor('#0F0F1A' if dark_mode else '#FFFFFF')
     
-    # Plot data
-    values += values[:1]  # Tutup loop
-    ax.fill(angles, values, color=riasec_types[types[0]]['color'], alpha=0.25)
-    ax.plot(angles, values, color='white' if dark_mode else 'black', linewidth=2)
+    values += values[:1]
+    ax.fill(angles, values, color=riasec_types[types[0]]['color'], alpha=0.3)
+    ax.plot(angles, values, color='#00FFCC' if dark_mode else '#FF00FF', linewidth=2, linestyle='--')
     
-    # Atur label
     ax.set_theta_offset(np.pi/2)
     ax.set_theta_direction(-1)
     ax.set_thetagrids(np.degrees(angles[:-1]), labels)
     
-    # Atur grid untuk skala 1-5
     ax.set_rlabel_position(0)
-    plt.yticks([1, 2, 3, 4, 5], ["1", "2", "3", "4", "5"], 
-               color="white" if dark_mode else "black", size=8)
+    plt.yticks([1, 2, 3, 4, 5], ["1", "2", "3", "4", "5"], color="#B0E0E6" if dark_mode else "#1A1A2E", size=10)
     plt.ylim(1, 5)
     
-    # Atur warna teks
     for label in ax.get_xticklabels():
-        label.set_color("white" if dark_mode else "black")
+        label.set_color("#B0E0E6" if dark_mode else "#1A1A2E")
     
-    # Atur grid
-    ax.grid(color="white" if dark_mode else "black", alpha=0.1)
+    ax.grid(color="#00CED1" if dark_mode else "#1A1A2E", alpha=0.3, linestyle='--')
     
-    # Simpan ke file sementara
     temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
     plt.savefig(temp_file.name, bbox_inches='tight', facecolor=fig.get_facecolor())
     plt.close()
     
     return temp_file.name
 
-def set_page_style(dark):
-    theme = dark_mode if dark else light_mode
-    
+def set_page_style():
     st.markdown(f"""
     <style>
         :root {{
@@ -222,127 +196,163 @@ def set_page_style(dark):
         .stApp {{
             background-color: var(--background);
             color: var(--text);
+            font-family: 'Arial', sans-serif;
+            overflow-x: hidden;
         }}
         
-        /* Menghilangkan header Streamlit */
         header {{
             visibility: hidden;
         }}
 
-        /* Hilangkan underline pada link di dalam button dan download-link */
-        .stButton a, .stButton a:visited, .stButton a:hover, .stButton a:active,
-        .download-link, .download-link:visited, .download-link:hover, .download-link:active {{
-            text-decoration: none !important;
-            box-shadow: none !important;
-        }}
-        .css-1d391kg {{
-            padding-top: 1rem;
-        }}
-        
         .stButton>button {{
             border: 2px solid var(--primary);
             color: white;
-            background-color: var(--primary);
-            border-radius: 10px;
-            padding: 0.5rem 1rem;
+            background: linear-gradient(45deg, var(--primary), #FF00FF);
+            border-radius: 20px;
+            padding: 0.7rem 1.5rem;
+            box-shadow: 0 0 10px var(--primary);
             transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }}
         
         .stButton>button:hover {{
-            background-color: var(--card);
-            color: var(--primary);
-            border: 2px solid var(--primary);
+            background: linear-gradient(45deg, #FF00FF, var(--primary));
+            box-shadow: 0 0 20px #FF00FF;
+            transform: scale(1.05);
         }}
         
         .question-card {{
-            background-color: var(--card);
-            border-radius: 15px;
+            background: linear-gradient(135deg, var(--card), #2A4066);
+            border-radius: 20px;
             padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+            margin-bottom: 2rem;
             border: 1px solid var(--border);
+            animation: float 3s ease-in-out infinite;
         }}
         
-        .answer-btn {{
-            margin: 0.5rem;
-            width: 100%;
+        @keyframes float {{
+            0%, 100% {{ transform: translateY(0); }}
+            50% {{ transform: translateY(-10px); }}
         }}
         
         .result-card {{
-            background-color: var(--card);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--card), #2A4066);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+            margin-bottom: 2rem;
             border: 1px solid var(--border);
+            animation: pulse 2s infinite;
+        }}
+        
+        @keyframes pulse {{
+            0% {{ box-shadow: 0 0 5px var(--border); }}
+            50% {{ box-shadow: 0 0 20px var(--primary); }}
+            100% {{ box-shadow: 0 0 5px var(--border); }}
         }}
         
         .progress-bar {{
-            height: 10px;
-            background-color: var(--border);
-            border-radius: 5px;
-            margin-bottom: 1.5rem;
+            height: 15px;
+            background: linear-gradient(90deg, #1A1A2E, #2A4066);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
         }}
         
         .progress-fill {{
             height: 100%;
-            border-radius: 5px;
-            background-color: var(--primary);
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--primary), #FF00FF);
             transition: width 0.5s;
+            box-shadow: 0 0 10px var(--primary);
         }}
         
         .mode-toggle {{
             position: fixed;
-            top: 10px;
-            right: 10px;
+            top: 15px;
+            right: 15px;
             z-index: 999;
         }}
         
-        /* Styling untuk text input */
         .stTextInput>div>div>input {{
-            background-color: var(--input-background) !important;
+            background: linear-gradient(135deg, var(--input-background), #2A4066);
             color: var(--input-text) !important;
             border: var(--input-border) !important;
-            border-radius: 10px !important;
-            padding: 0.5rem 1rem !important;
+            border-radius: 20px !important;
+            padding: 0.7rem 1.5rem !important;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+            width: 100%; /* Ensure full width */
+            height: 100%; /* Ensure full height */
         }}
         
-        /* Chart styling */
         .st-bd {{
-            background-color: var(--card) !important;
+            background: linear-gradient(135deg, var(--card), #2A4066) !important;
             border: 1px solid var(--border) !important;
-            border-radius: 15px !important;
+            border-radius: 20px !important;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         }}
         
-        /* Text colors */
         h1, h2, h3, h4, h5, h6, p, label, .stMarkdown {{
             color: var(--text) !important;
+            text-shadow: 0 0 5px var(--text-secondary);
         }}
         
-        /* Download link styling */
-        .download-link, .download-link:visited, .download-link:hover, .download-link:active {{
+        .download-link {{
             display: inline-block;
-            padding: 0.5rem 1rem;
-            background-color: var(--primary);
+            padding: 0.7rem 1.5rem;
+            background: linear-gradient(45deg, var(--primary), #FF00FF);
             color: white !important;
-            border-radius: 10px;
+            border-radius: 20px;
             text-decoration: none !important;
+            box-shadow: 0 0 10px var(--primary);
             transition: all 0.3s;
-            border: 2px solid var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }}
         
         .download-link:hover {{
-            background-color: var(--card);
-            color: var(--primary) !important;
-            border: 2px solid var(--primary);
+            background: linear-gradient(45deg, #FF00FF, var(--primary));
+            box-shadow: 0 0 20px #FF00FF;
+            transform: scale(1.05);
         }}
         
-        /* Home button styling */
         .home-button {{
             position: fixed;
-            top: 10px;
-            left: 10px;
+            top: 15px;
+            left: 15px;
             z-index: 999;
+            width: 80px; /* Fixed width for home button */
+            text-align: center;
+            padding: 0.5rem 0; /* Adjusted padding */
+        }}
+        
+        .answer-options {{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }}
+        
+        .answer-btn {{
+            border: 2px solid var(--primary);
+            color: white;
+            background: linear-gradient(45deg, var(--primary), #FF00FF);
+            border-radius: 20px;
+            padding: 0.7rem 1.5rem;
+            box-shadow: 0 0 10px var(--primary);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100%;
+            text-align: center;
+        }}
+        
+        .answer-btn:hover {{
+            background: linear-gradient(45deg, #FF00FF, var(--primary));
+            box-shadow: 0 0 20px #FF00FF;
+            transform: scale(1.05);
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -352,23 +362,19 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Add logo if available
     logo_path = os.path.join(BASE_DIR, "../Logo/FM_logo_full.png")
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=8, w=40)
     
-    # Header
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Hasil Tes Kepribadian RIASEC", 0, 1, 'C')
     pdf.ln(5)
     
-    # Informasi Peserta
     pdf.set_font("Arial", '', 12)
     pdf.cell(0, 10, f"Nama: {name}", 0, 1)
     pdf.cell(0, 10, f"Tanggal: {datetime.now().strftime('%d/%m/%Y %H:%M')}", 0, 1)
     pdf.ln(10)
     
-    # Skor
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Skor Anda:", 0, 1)
     pdf.ln(5)
@@ -379,11 +385,9 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     
     pdf.ln(10)
     
-    # Diagram RIASEC
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Profil Kepribadian:", 0, 1)
     pdf.ln(5)
-    # Atur lebar mengikuti rasio gambar agar tidak stretch, tinggi tetap 120
     img = Image.open(chart_path)
     width, height = img.size
     aspect_ratio = width / height
@@ -391,9 +395,8 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     new_width = int(aspect_ratio * new_height)
     pdf.image(chart_path, x=(210 - new_width) // 2, w=new_width, h=new_height)
     pdf.ln(10)
-    img.close()  # Pastikan file ditutup sebelum dihapus
+    img.close()
     
-    # Tipe Dominan
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, f"Tipe Dominan: {riasec_types[dominant_type]['name']}", 0, 1)
     pdf.ln(5)
@@ -402,7 +405,6 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     pdf.multi_cell(0, 10, riasec_types[dominant_type]['description'])
     pdf.ln(10)
     
-    # Rekomendasi Pekerjaan
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Rekomendasi Pekerjaan:", 0, 1)
     pdf.ln(5)
@@ -411,7 +413,6 @@ def create_pdf(name, scores, dominant_type, recommended_jobs, chart_path):
     for job in recommended_jobs:
         pdf.cell(0, 10, f"- {job}", 0, 1)
     
-    # Hapus file chart sementara
     os.unlink(chart_path)
     
     return pdf.output(dest='S').encode('latin1')
@@ -422,17 +423,6 @@ def get_pdf_download_link(pdf_output, name):
     filename = f"hasil_tes_riasec_{name}_{current_date}.pdf"
     return f'<a class="download-link" style="text-decoration: none !important;" href="data:application/octet-stream;base64,{b64}" download="{filename}">Download Hasil Tes (PDF)</a>'
 
-def render_mode_toggle():
-    # Button toggle mode sederhana
-    if st.session_state.dark_mode:
-        if st.button("☀️ Light Mode", key="mode_toggle"):
-            st.session_state.dark_mode = False
-            st.rerun()
-    else:
-        if st.button("🌙 Dark Mode", key="mode_toggle"):
-            st.session_state.dark_mode = True
-            st.rerun()
-
 def render_home_button():
     if st.session_state.page != "start":
         if st.button("🏠 Home", key="home_button"):
@@ -441,41 +431,27 @@ def render_home_button():
             st.rerun()
 
 def main():
-    st.set_page_config(page_title="Tes Kepribadian RIASEC", page_icon="🧑‍💼", layout="wide")
+    st.set_page_config(page_title="Tes Kepribadian RIASEC", page_icon="👩‍🎓", layout="wide")
     
-    # Inisialisasi session state dengan default dark mode
     if 'page' not in st.session_state:
         st.session_state.page = "start"
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
     if 'name' not in st.session_state:
         st.session_state.name = ""
-    if 'dark_mode' not in st.session_state:
-        st.session_state.dark_mode = True  # Default dark mode
+
+    set_page_style()
     
-    # Set style berdasarkan mode
-    set_page_style(st.session_state.dark_mode)
-    
-    # Render home button di kiri atas
     with st.container():
         render_home_button()
     
-    # Render mode toggle hanya di halaman start
-    if st.session_state.page == "start":
-        with st.container():
-            render_mode_toggle()
-    
-    # Halaman awal
     if st.session_state.page == "start":
         render_start_page()
     
-    # Halaman tes
     elif st.session_state.page == "test":
         render_test_page()
     
-    # Halaman hasil - load model hanya saat diperlukan
     elif st.session_state.page == "results":
-        # Load model and scaler only when needed
         if 'model' not in st.session_state:
             try:
                 with st.spinner('Memproses hasil tes...'):
@@ -493,20 +469,8 @@ def render_start_page():
     with col2:
         logo_path = os.path.join(BASE_DIR, "../Logo/FM_logo_full.png")
         st.image(logo_path)
-        st.markdown(f"<h1 style='color: var(--primary);'>FutureMinded: Make Your Own Choice</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 18px; color: var(--text);'>FutureMinded merupakan platform pengembangan diri yang membantu Anda menemukan minat dan potensi karir melalui Tes Kepribadian RIASEC. Temukan tipe kepribadian dan rekomendasi karir yang sesuai untuk masa depan Anda.</p>", unsafe_allow_html=True)
-        
-        st.markdown("""
-        <style>
-            .stTextInput>div>div>input {
-                background-color: var(--input-background) !important;
-                color: var(--input-text) !important;
-                border: var(--input-border) !important;
-                border-radius: 10px !important;
-                padding: 0.5rem 1rem !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+        st.markdown(f"<h1 style='color: var(--primary); text-shadow: 0 0 10px var(--primary);'>FutureMinded: Make Your Own Choice</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='font-size: 18px; color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>FutureMinded merupakan platform pengembangan diri yang membantu Anda menemukan minat dan potensi karir melalui Tes Kepribadian RIASEC. Temukan tipe kepribadian dan rekomendasi karir yang sesuai untuk masa depan Anda.</p>", unsafe_allow_html=True)
         
         st.session_state.name = st.text_input("Masukkan nama Anda:", placeholder="Nama Anda")
         
@@ -516,27 +480,26 @@ def render_start_page():
             else:
                 st.session_state.page = "test"
                 st.rerun()
+
 def render_test_page():
-    st.markdown(f"<h1 style='color: var(--primary);'>Tes Kepribadian RIASEC</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='color: var(--text);'>Halo, {st.session_state.name}!</h3>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color: var(--text);'>Silakan jawab pertanyaan berikut dengan skala 1 (Sangat Tidak Setuju) sampai 5 (Sangat Setuju):</p>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color: var(--primary); text-shadow: 0 0 10px var(--primary);'>Tes Kepribadian RIASEC</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Halo, {st.session_state.name}!</h3>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Silakan jawab pertanyaan berikut dengan skala 1 (Sangat Tidak Setuju) sampai 5 (Sangat Setuju):</p>", unsafe_allow_html=True)
     
-    # Tampilkan progress bar
     answered_count = len(st.session_state.answers)
     total_questions = len(questions)
     progress = answered_count / total_questions
     
-    # Perbaikan di sini: Gunakan min() untuk memastikan tidak melebihi total pertanyaan
     current_question = min(answered_count + 1, total_questions)
     
     st.markdown(f"""
     <div class="progress-bar">
         <div class="progress-fill" style="width: {progress * 100}%;"></div>
     </div>
-    <p style="text-align: center; color: var(--text);">Pertanyaan {current_question} dari {total_questions}</p>
+    <p style="text-align: center; color: var(--text); text-shadow: 0 0 5px var(--text-secondary);">Pertanyaan {current_question} dari {total_questions}</p>
     """, unsafe_allow_html=True)
     
-    # Tampilkan pertanyaan yang belum dijawab
+    
     unanswered = [q for i, q in enumerate(questions) if i not in st.session_state.answers]
     
     if unanswered:
@@ -545,36 +508,34 @@ def render_test_page():
         
         st.markdown(f"""
         <div class="question-card">
-            <h3 style='color: var(--text);'>{current_q['question']}</h3>
+            <h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>{current_q['question']}</h3>
         </div>
         """, unsafe_allow_html=True)
         
-        # Show buttons directly in columns
-        col1, col2, col3, col4, col5 = st.columns(5)
-        with col1:
-            if st.button("1", key=f"1_{current_index}"):
-                st.session_state.answers[current_index] = 1
-                st.rerun()
-        with col2:
-            if st.button("2", key=f"2_{current_index}"):
-                st.session_state.answers[current_index] = 2
-                st.rerun()
-        with col3:
-            if st.button("3", key=f"3_{current_index}"):
-                st.session_state.answers[current_index] = 3
-                st.rerun()
-        with col4:
-            if st.button("4", key=f"4_{current_index}"):
-                st.session_state.answers[current_index] = 4
-                st.rerun()
-        with col5:
-            if st.button("5", key=f"5_{current_index}"):
-                st.session_state.answers[current_index] = 5
-                st.rerun()
+        st.markdown(
+        """
+        <style>
+        .stButton>button {
+            width: 100% !important;
+            min-width: 120px;
+            padding: 0.7rem 0 !important;
+            font-size: 1.2rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+        
+        cols = st.columns(5)
+        for i in range(1, 6):
+            with cols[i-1]:
+                if st.button(str(i), key=f"{i}_{current_index}"):
+                    st.session_state.answers[current_index] = i
+                    st.rerun()
 
-        # Add explanation below the buttons
+
         st.markdown("""
-        <div style="text-align: center; margin-top: 10px; color: var(--text-secondary);">
+        <div style="text-align: center; margin-top: 10px; color: var(--text-secondary); text-shadow: 0 0 5px var(--text-secondary);">
             <small>
                 1: Sangat Tidak Setuju | 
                 2: Tidak Setuju | 
@@ -585,71 +546,62 @@ def render_test_page():
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Semua pertanyaan telah dijawab
         st.session_state.page = "results"
         st.rerun()
 
 def render_results_page():
-    st.markdown(f"<h1 style='color: var(--primary);'>Hasil Tes Kepribadian RIASEC</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='color: var(--text);'>Untuk {st.session_state.name}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color: var(--primary); text-shadow: 0 0 10px var(--primary);'>Hasil Tes Kepribadian RIASEC</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Untuk {st.session_state.name}</h3>", unsafe_allow_html=True)
     
-    # Hitung skor untuk setiap tipe
     scores = {"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0}
     
     for idx, answer in st.session_state.answers.items():
         q_type = questions[idx]["type"]
         scores[q_type] += answer
     
-    # Normalisasi skor (rata-rata per tipe)
     for k in scores:
         question_count = len([q for q in questions if q["type"] == k])
         if question_count > 0:
             scores[k] = round(scores[k] / question_count, 2)
     
-    # Konversi ke format yang dibutuhkan untuk rekomendasi
     user_scores = [scores['R'], scores['I'], scores['A'], scores['S'], scores['E'], scores['C']]
     
-    # Tampilkan skor
-    st.markdown("<h3 style='color: var(--text);'>Skor Anda:</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Skor Anda:</h3>", unsafe_allow_html=True)
     
     cols = st.columns(6)
     for i, (type_code, score) in enumerate(scores.items()):
         with cols[i]:
             st.markdown(f"""
-            <div style="background-color: {riasec_types[type_code]['color'] + '30'}; 
-                        border-radius: 10px; 
+            <div style="background: linear-gradient(135deg, {riasec_types[type_code]['color']}30, #2A4066); 
+                        border-radius: 20px; 
                         padding: 1rem; 
                         text-align: center;
                         border-left: 5px solid {riasec_types[type_code]['color']};
-                        color: var(--text);">
+                        color: var(--text);
+                        box-shadow: 0 0 10px {riasec_types[type_code]['color']};">
                 <h4>{riasec_types[type_code]['name']}</h4>
                 <h3>{score}</h3>
             </div>
             """, unsafe_allow_html=True)
     
-    # Tampilkan diagram RIASEC (skala 1-5)
-    st.markdown("<h3 style='color: var(--text);'>Profil Kepribadian:</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Profil Kepribadian:</h3>", unsafe_allow_html=True)
     chart_path = create_riasec_chart(scores, st.session_state.dark_mode)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
         st.image(chart_path)
     
-    # Tampilkan deskripsi tipe dominan
     dominant_type = max(scores.items(), key=lambda x: x[1])[0]
     st.markdown(f"""
     <div class="result-card">
-        <h3 style='color: var(--text);'>Tipe Dominan: {riasec_types[dominant_type]['name']}</h3>
-        <p style='color: var(--text);'>{riasec_types[dominant_type]['description']}</p>
+        <h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Tipe Dominan: {riasec_types[dominant_type]['name']}</h3>
+        <p style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>{riasec_types[dominant_type]['description']}</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Dapatkan rekomendasi pekerjaan menggunakan model
     recommended_jobs_df = recommend_jobs(user_scores)
     
-    # Display the recommendations with proper formatting
-    st.markdown("<h3 style='color: var(--text);'>Rekomendasi Karier untuk Anda:</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Rekomendasi Karier untuk Anda:</h3>", unsafe_allow_html=True)
 
-    # Create a styled table
     st.markdown("""
     <style>
         .job-table {
@@ -658,32 +610,29 @@ def render_results_page():
             margin-bottom: 20px;
         }
         .job-table th {
-            background-color: var(--primary);
+            background: linear-gradient(45deg, var(--primary), #FF00FF);
             color: white;
             padding: 12px;
             text-align: left;
+            text-shadow: 0 0 5px white;
         }
         .job-table td {
             padding: 10px;
             border-bottom: 1px solid var(--border);
-        }
-        .job-table tr:nth-child(even) {
-            background-color: var(--card);
+            background: linear-gradient(135deg, var(--card), #2A4066);
         }
         .job-table tr:hover {
-            background-color: var(--secondary);
-            opacity: 0.8;
+            background: linear-gradient(135deg, #2A4066, var(--card));
+            box-shadow: 0 0 15px var(--primary);
         }
     </style>
     """, unsafe_allow_html=True)
 
-    # Convert DataFrame to HTML and display
     st.markdown(
         recommended_jobs_df.to_html(classes="job-table", index=False, escape=False),
         unsafe_allow_html=True
     )
     
-    # Buat dan tampilkan tombol download PDF
     pdf_output = create_pdf(
         st.session_state.name, 
         scores, 
