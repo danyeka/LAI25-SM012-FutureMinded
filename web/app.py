@@ -585,7 +585,7 @@ def render_results_page():
             """, unsafe_allow_html=True)
     
     st.markdown("<h3 style='color: var(--text); text-shadow: 0 0 5px var(--text-secondary);'>Profil Kepribadian:</h3>", unsafe_allow_html=True)
-    chart_path = create_riasec_chart(scores, st.session_state.dark_mode)
+    chart_path = create_riasec_chart(scores, st.session_state)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
         st.image(chart_path)
