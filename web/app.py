@@ -137,8 +137,39 @@ def recommend_jobs(user_scores, top_n=5):
     result = st.session_state.df_pivot.iloc[top_idx][['Title', 'Job Family']].copy()
     result['Similarity Score'] = sim[top_idx]
     result['Similarity Score'] = result['Similarity Score'].round(3)
+    
+    # Mapping alasan berdasarkan job family
+    job_family_reasons = {
+    'Management': "Skor tinggi Anda pada dimensi Enterprising dan Conventional cocok untuk peran strategis dan pengambilan keputusan di bidang manajemen.",
+    'Business and Financial Operations': "Skor tinggi Anda pada dimensi Conventional dan Investigative cocok untuk analisis data, perencanaan bisnis, dan pengelolaan keuangan.",
+    'Computer and Mathematical': "Skor tinggi Anda pada dimensi Investigative dan Conventional mendukung pemecahan masalah logis dan analisis sistem teknologi.",
+    'Architecture and Engineering': "Skor tinggi Anda pada dimensi Realistic dan Investigative menunjukkan ketertarikan pada desain teknis dan solusi rekayasa.",
+    'Life, Physical, and Social Science': "Skor tinggi Anda pada dimensi Investigative dan Realistic sesuai untuk riset ilmiah dan eksplorasi alam maupun sosial.",
+    'Community and Social Service': "Skor tinggi Anda pada dimensi Social dan Enterprising cocok untuk membantu, membimbing, dan mendukung kesejahteraan masyarakat.",
+    'Legal': "Skor tinggi Anda pada dimensi Enterprising dan Investigative menunjukkan kemampuan analitis dan ketegasan dalam bidang hukum.",
+    'Educational Instruction and Library': "Skor tinggi Anda pada dimensi Social dan Investigative cocok untuk mengajar, mendidik, dan mengelola pengetahuan.",
+    'Arts, Design, Entertainment, Sports, and Media': "Skor tinggi Anda pada dimensi Artistic dan Enterprising menunjukkan ekspresi kreatif dan kemampuan komunikasi publik.",
+    'Healthcare Practitioners and Technical': "Skor tinggi Anda pada dimensi Social dan Investigative cocok untuk pekerjaan klinis yang memerlukan analisis dan empati.",
+    'Healthcare Support': "Skor tinggi Anda pada dimensi Social dan Conventional sesuai untuk membantu tenaga medis dalam merawat pasien.",
+    'Protective Service': "Skor tinggi Anda pada dimensi Realistic dan Social cocok untuk menjaga keamanan dan memberikan pelayanan perlindungan.",
+    'Food Preparation and Serving Related': "Skor tinggi Anda pada dimensi Realistic dan Social sesuai untuk pekerjaan cepat, praktis, dan pelayanan pelanggan.",
+    'Building and Grounds Cleaning and Maintenance': "Skor tinggi Anda pada dimensi Realistic dan Conventional cocok untuk pekerjaan fisik yang terstruktur.",
+    'Personal Care and Service': "Skor tinggi Anda pada dimensi Social dan Realistic menunjukkan ketertarikan dalam membantu dan melayani kebutuhan pribadi orang lain.",
+    'Sales and Related': "Skor tinggi Anda pada dimensi Enterprising dan Social cocok untuk menjalin relasi, mempromosikan, dan menjual produk atau jasa.",
+    'Office and Administrative Support': "Skor tinggi Anda pada dimensi Conventional dan Social sesuai untuk pekerjaan administratif yang rapi dan terkoordinasi.",
+    'Farming, Fishing, and Forestry': "Skor tinggi Anda pada dimensi Realistic dan Investigative cocok untuk pekerjaan berbasis alam, praktik langsung, dan observasi.",
+    'Construction and Extraction': "Skor tinggi Anda pada dimensi Realistic dan Conventional sesuai untuk pekerjaan teknis yang membutuhkan kekuatan fisik dan presisi.",
+    'Installation, Maintenance, and Repair': "Skor tinggi Anda pada dimensi Realistic dan Investigative cocok untuk perbaikan teknis dan analisis perangkat.",
+    'Production': "Skor tinggi Anda pada dimensi Realistic dan Conventional cocok untuk pekerjaan manufaktur yang memerlukan ketelitian dan prosedur tetap.",
+    'Transportation and Material Moving': "Skor tinggi Anda pada dimensi Realistic dan Conventional sesuai untuk peran pengoperasian kendaraan dan logistik barang."
+    }
+
     top_dim = user_df.iloc[0].sort_values(ascending=False).head(2).index.tolist()
-    result['Alasan'] = f"Skor tertinggi Anda pada dimensi {top_dim[0]} dan {top_dim[1]}"
+    # Menambahkan alasan berdasarkan job family
+    result['Alasan'] = result['Job Family'].apply(
+    lambda x: job_family_reasons.get(x, f"Skor tertinggi Anda pada dimensi {top_dim[0]} dan {top_dim[1]} cocok untuk pekerjaan ini.")
+    )
+
     return result.reset_index(drop=True)
 
 def create_riasec_chart(scores, dark_mode=False):
