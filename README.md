@@ -113,7 +113,7 @@ streamlit run app.py
 ## Web Demo
 
 You can access the application online at:  
-[https://future-minded.streamlit.app/](https://future-minded.streamlit.app/)
+[https://thefutureminded.streamlit.app/](https://thefutureminded.streamlit.app/)
 
 
 ## Struktur File
